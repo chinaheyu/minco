@@ -13,7 +13,7 @@ def beta(x: float, N: int, order: int = 0) -> npt.NDArray[float]:
     return c
 
 
-def generate_problem(m: int, s: int, M: int, N: int, D: Sequence[npt.NDArray[float]], T: Sequence[float]) -> tuple[npt.NDArray[float], npt.NDArray[float]]:
+def create_problem(m: int, s: int, M: int, N: int, D: Sequence[npt.NDArray[float]], T: Sequence[float]) -> tuple[npt.NDArray[float], npt.NDArray[float]]:
     MM = np.zeros((2 * M * s, 2 * M * s))
     MM[:s, :2 * s] = np.vstack([beta(0.0, N, i) for i in range(s)])
     MM[-s:, -2 * s:] = np.vstack([beta(T[-1], N, i) for i in range(s)])
@@ -76,7 +76,7 @@ class MINCO:
         self.D = D
         self.T = T
 
-        MM, b = generate_problem(m, s, M, N, D, T)
+        MM, b = create_problem(m, s, M, N, D, T)
         ab = diagonal_form(MM, 3 * s - 1, 3 * s - 1)
         self.c = solve_banded((3 * s - 1, 3 * s - 1), ab, b)
 
@@ -107,11 +107,11 @@ class MINCOTrajectory(MINCO):
         super().__init__(m, s, M, N, D, T)
 
 
-class MinimumJerkTrajectory(MINCOTrajectory):
+class MinimumAccelerationTrajectory(MINCOTrajectory):
     def __init__(self, waypoints: npt.NDArray[float], time_points: npt.NDArray[float],
                  velocity_boundary: Optional[npt.NDArray] = None) -> None:
         """
-        Minimum Jerk Trajectory (link: https://ww2.mathworks.cn/help/uav/ref/minjerkpolytraj.html)
+        Minimum Acceleration Trajectory
         :param waypoints: Waypoints for the trajectory, specified as an n-by-p matrix. n is the dimension of the trajectory, and p is the number of waypoints.
         :param time_points: Time points for the waypoints of the trajectory, specified as a p-element row vector. p is the number of waypoints.
         :param velocity_boundary: Velocity boundary for the trajectory, specified as an n-by-2 matrix. n is the dimension of the trajectory.
@@ -122,12 +122,12 @@ class MinimumJerkTrajectory(MINCOTrajectory):
         super().__init__(2, waypoints, time_points, boundaries[:, :, 0], boundaries[:, :, 1])
 
 
-class MinimumSnapTrajectory(MINCOTrajectory):
+class MinimumJerkTrajectory(MINCOTrajectory):
     def __init__(self, waypoints: npt.NDArray[float], time_points: npt.NDArray[float],
                  velocity_boundary: Optional[npt.NDArray] = None,
                  acceleration_boundary: Optional[npt.NDArray] = None) -> None:
         """
-        Minimum Snap Trajectory (link: https://ww2.mathworks.cn/help/uav/ref/minsnappolytraj.html)
+        Minimum Jerk Trajectory
         :param waypoints: Waypoints for the trajectory, specified as an n-by-p matrix. n is the dimension of the trajectory, and p is the number of waypoints.
         :param time_points: Time points for the waypoints of the trajectory, specified as a p-element row vector. p is the number of waypoints.
         :param velocity_boundary: Velocity boundary for the trajectory, specified as an n-by-2 matrix. n is the dimension of the trajectory.
@@ -141,4 +141,27 @@ class MinimumSnapTrajectory(MINCOTrajectory):
         super().__init__(3, waypoints, time_points, boundaries[:, :, 0], boundaries[:, :, 1])
 
 
-__all__ = ['MINCO', 'MINCOTrajectory', 'MinimumJerkTrajectory', 'MinimumSnapTrajectory']
+class MinimumSnapTrajectory(MINCOTrajectory):
+    def __init__(self, waypoints: npt.NDArray[float], time_points: npt.NDArray[float],
+                 velocity_boundary: Optional[npt.NDArray] = None,
+                 acceleration_boundary: Optional[npt.NDArray] = None,
+                 jerk_boundary_conditions: Optional[npt.NDArray] = None) -> None:
+        """
+        Minimum Snap Trajectory
+        :param waypoints: Waypoints for the trajectory, specified as an n-by-p matrix. n is the dimension of the trajectory, and p is the number of waypoints.
+        :param time_points: Time points for the waypoints of the trajectory, specified as a p-element row vector. p is the number of waypoints.
+        :param velocity_boundary: Velocity boundary for the trajectory, specified as an n-by-2 matrix. n is the dimension of the trajectory.
+        :param acceleration_boundary: Acceleration boundary for the trajectory, specified as an n-by-2 matrix. n is the dimension of the trajectory.
+        :param jerk_boundary_conditions: Jerk boundary for the trajectory, specified as an n-by-2 matrix. n is the dimension of the trajectory.
+        """
+        if velocity_boundary is None:
+            velocity_boundary = np.zeros((waypoints.shape[0], 2))
+        if acceleration_boundary is None:
+            acceleration_boundary = np.zeros((waypoints.shape[0], 2))
+        if jerk_boundary_conditions is None:
+            jerk_boundary_conditions = np.zeros((waypoints.shape[0], 2))
+        boundaries = np.stack([velocity_boundary, acceleration_boundary, jerk_boundary_conditions])
+        super().__init__(4, waypoints, time_points, boundaries[:, :, 0], boundaries[:, :, 1])
+
+
+__all__ = ['MINCO', 'MINCOTrajectory', 'MinimumAccelerationTrajectory', 'MinimumJerkTrajectory', 'MinimumSnapTrajectory']
