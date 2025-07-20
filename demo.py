@@ -7,7 +7,7 @@ def main() -> None:
     mj = MinimumSnapTrajectory(
         np.array([[0.0, 1.0, -1.0, 0.0],
                   [1.0, -1.0, 2.0, 1.0]]),
-        np.array([1.0, 1.0, 1.0]),
+        np.array([0.0, 1.0, 2.0, 3.0]),
         np.array([[0.0, 0.0],
                   [-1.0, 1.0]]),
         np.array([[5.0, -5.0],

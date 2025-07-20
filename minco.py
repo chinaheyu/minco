@@ -100,10 +100,10 @@ class MINCOTrajectory(MINCO):
         N = 2 * s - 1
         D = [
             np.vstack([[waypoints[:, 0]], left_boundaries]),
-            *[waypoints[np.newaxis, :, i] for i in range(M - 1)],
+            *[waypoints[np.newaxis, :, i] for i in range(1, M)],
             np.vstack([[waypoints[:, M]], right_boundaries]),
         ]
-        T = time_points
+        T = np.diff(time_points)
         super().__init__(m, s, M, N, D, T)
 
 
